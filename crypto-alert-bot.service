@@ -7,10 +7,10 @@ After=network.target
 User=admin
 
 # thư mục project
-WorkingDirectory=/home/admin/crypto-alert-bot
+WorkingDirectory=/home/admin/crypto_alert_bot
 
 # chạy bằng python trong venv (QUAN TRỌNG)
-ExecStart=/home/admin/crypto-alert-bot/venv/bin/python /home/admin/crypto-alert-bot/app.py
+ExecStart=/home/admin/crypto_alert_bot/venv/bin/python /home/admin/crypto_alert_bot/app.py
 
 # tự restart khi crash
 Restart=always
