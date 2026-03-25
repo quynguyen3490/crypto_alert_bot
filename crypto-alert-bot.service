@@ -1,0 +1,33 @@
+[Unit]
+Description=Crypto Alert Bot Service
+After=network.target
+
+[Service]
+# user đang dùng (check bằng whoami)
+User=admin
+
+# thư mục project
+WorkingDirectory=/home/admin/crypto-alert-bot
+
+# chạy bằng python trong venv (QUAN TRỌNG)
+ExecStart=/home/admin/crypto-alert-bot/venv/bin/python /home/admin/crypto-alert-bot/app.py
+
+# tự restart khi crash
+Restart=always
+RestartSec=5
+
+# log
+StandardOutput=journal
+StandardError=journal
+
+# optional (khuyến nghị cho bot chạy dài)
+Environment=PYTHONUNBUFFERED=1
+
+# tránh bị kill do resource
+LimitNOFILE=4096
+
+# restart nếu bị treo
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

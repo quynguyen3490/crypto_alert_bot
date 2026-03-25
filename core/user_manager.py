@@ -1,0 +1,124 @@
+import json
+import threading
+
+class UserManager:
+    def __init__(self, file_path):
+        self.file_path = file_path
+        self.lock = threading.Lock()
+        self.version = 0
+        self.users = {}
+        self.load()
+
+    def load(self):
+        try:
+            with open(self.file_path, "r") as f:
+                self.users = json.load(f)
+        except:
+            self.users = {}
+
+    def save(self):
+        with open(self.file_path, "w") as f:
+            json.dump(self.users, f, indent=2)
+        self.version += 1
+
+    def get_version(self):
+        return self.version
+
+    def add_user(self, chat_id):
+        with self.lock:
+            if str(chat_id) not in self.users:
+                self.users[str(chat_id)] = {
+                    "coins": {}
+                }
+                self.save()
+
+    def get_users(self):
+        return self.users
+
+    def update_user(self, chat_id, data):
+        with self.lock:
+            self.users[str(chat_id)].update(data)
+            self.save()
+
+    def add_coin(self, chat_id, symbol):
+        with self.lock:
+            user = self.users[str(chat_id)]
+            if symbol not in user["coins"]:
+                user["coins"].append(symbol)
+                self.save()
+
+    def remove_coin(self, chat_id, symbol):
+        with self.lock:
+            user = self.users[str(chat_id)]
+            if symbol in user["coins"]:
+                user["coins"].remove(symbol)
+                self.save()
+
+    def add_alert(self, chat_id, symbol, mode, threshold):
+        with self.lock:
+            user = self.users.setdefault(str(chat_id), {"coins": {}})
+
+            coins = user.setdefault("coins", {})
+            alerts = coins.setdefault(symbol, [])
+
+            # tránh duplicate
+            for a in alerts:
+                if a["mode"] == mode and a["threshold"] == threshold:
+                    return
+
+            alerts.append({
+                "mode": mode,
+                "threshold": threshold
+            })
+
+            self.version += 1
+            self.save()
+    
+    def remove_coin(self, chat_id, symbol):
+        with self.lock:
+            user = self.users.get(str(chat_id), {})
+            coins = user.get("coins", {})
+
+            if symbol in coins:
+                del coins[symbol]
+                self.version += 1
+                self.save()
+
+    def remove_alert(self, chat_id, symbol, mode=None, threshold=None):
+        with self.lock:
+            user = self.users.get(str(chat_id))
+            if not user:
+                return False
+
+            coins = user.get("coins", {})
+
+            if symbol not in coins:
+                return False
+
+            # 🔥 CASE 1: remove whole coin
+            if mode is None:
+                del coins[symbol]
+                self.version += 1
+                self.save()
+                return True
+
+            # 🔥 CASE 2: remove specific alert
+            alerts = coins[symbol]
+
+            new_alerts = [
+                a for a in alerts
+                if not (a["mode"] == mode and a["threshold"] == threshold)
+            ]
+
+            if len(new_alerts) == len(alerts):
+                return False  # không tìm thấy
+
+            if new_alerts:
+                coins[symbol] = new_alerts
+            else:
+                # nếu không còn alert → xoá luôn coin
+                del coins[symbol]
+
+            self.version += 1
+            self.save()
+            return True

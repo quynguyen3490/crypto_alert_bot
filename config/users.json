@@ -1,0 +1,36 @@
+{
+  "5642939314": {
+    "coins": {
+      "XAUUSDT": [
+        {
+          "mode": "usd",
+          "threshold": 50.0
+        }
+      ],
+      "BTCUSDT": [
+        {
+          "mode": "usd",
+          "threshold": 1000.0
+        },
+        {
+          "mode": "percent",
+          "threshold": 1.0
+        },
+        {
+          "mode": "usd",
+          "threshold": 10.0
+        }
+      ]
+    }
+  },
+  "1015317047": {
+    "coins": {
+      "SOLUSDT": [
+        {
+          "mode": "usd",
+          "threshold": 1.0
+        }
+      ]
+    }
+  }
+}
