@@ -1,6 +1,9 @@
 import json
 import threading
 
+DEFAULT_KLINE = "1m"
+DEFAULT_MALENGTH = 14
+
 class UserManager:
     def __init__(self, file_path):
         self.file_path = file_path
@@ -28,6 +31,7 @@ class UserManager:
         with self.lock:
             if str(chat_id) not in self.users:
                 self.users[str(chat_id)] = {
+                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH},
                     "coins": {}
                 }
                 self.save()
@@ -54,8 +58,30 @@ class UserManager:
                 user["coins"].remove(symbol)
                 self.save()
 
+    def update_config(self, chat_id, kline=None, malength=None):
+        with self.lock:
+            user = self.users.setdefault(str(chat_id), {"config": {}})
+
+            config = user.setdefault("config", {})
+            
+            if kline:
+                config["kline"] = str(kline)
+            
+            if malength:
+                config["malength"] = int(malength)
+            
+            self.version += 1
+            self.save()
+
     def add_alert(self, chat_id, symbol, mode, threshold):
         with self.lock:
+            #add config default
+            if str(chat_id) not in self.users:
+                self.users[str(chat_id)] = {
+                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH},
+                    "coins": {}
+                }
+
             user = self.users.setdefault(str(chat_id), {"coins": {}})
 
             coins = user.setdefault("coins", {})

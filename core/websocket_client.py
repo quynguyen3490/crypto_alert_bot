@@ -11,6 +11,9 @@ from core.telegram_bot import TelegramBot
 
 import os
 
+DEFAULT_KLINE = "1m"
+DEFAULT_MALENGTH = 14
+
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
     raise ValueError("Missing TELEGRAM_TOKEN in .env")
@@ -46,14 +49,27 @@ class WebSocketClient:
                 symbols.add(s.lower())
 
         return list(symbols)
+    
+    def get_config(self):
+        users = self.user_manager.get_users()
+
+        if not users:
+            return DEFAULT_KLINE, DEFAULT_MALENGTH
+
+        for uid, u in users.items():
+            kline = str(u["config"]["kline"])
+            malength = int(u["config"]["malength"])
+        
+        return kline, malength
 
     def build_url(self):
         symbols = self.get_symbols()
+        kline, malength = self.get_config()
 
         if not symbols:
             return None
 
-        streams = [f"{s}@kline_1m" for s in symbols]   # 🔥 đổi ở đây
+        streams = [f"{s}@kline_{kline}" for s in symbols]   # 🔥 đổi ở đây
         return f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
     # =========================
     # TELEGRAM
@@ -97,6 +113,8 @@ class WebSocketClient:
         return "📈" if last > prev else "📉"
 
     def build_message(self, symbol, prev, last, mode, value):
+        kline, malength = self.get_config()
+
         icon = self.trend_icon(prev, last)
         price_str = self.format_price(last)
         prev_str = self.format_price(prev)
@@ -113,26 +131,26 @@ class WebSocketClient:
 
         if mode == "percent":
             return (
-                f"{icon} *{symbol}*\n"
+                f"{icon} *{symbol}* ({kline})\n"
                 f"Price: *{price_str}*\n"
                 f"Change: {idicator} *{self.format_percent(real_change_percent)}*\n"
-                f"Prev: {prev_str}\n"
+                f"MA({malength}): {prev_str}\n"
                 f"Time: {now}"
             )
 
         elif mode == "usd":
             return (
-                f"{icon} *{symbol}*\n"
+                f"{icon} *{symbol}* ({kline})\n"
                 f"Price: *{price_str}*\n"
                 f"Change: {idicator} *{self.format_usd(real_change)}*\n"
-                f"Prev: {prev_str}\n"
+                f"MA({malength}): {prev_str}\n"
                 f"Time: {now}"
             )
 
         elif mode == "price":
             direction = "🚀 BREAK UP" if last > prev else "🔻 BREAK DOWN"
             return (
-                f"{direction} *{symbol}*\n"
+                f"{direction} *{symbol}*\ ({kline})n"
                 f"Price: *{price_str}*\n"
                 f"Target: {self.format_price(value)}\n"
                 f"Time: {now}"
@@ -143,6 +161,8 @@ class WebSocketClient:
     # =========================
     def on_message(self, ws, message):
         try:
+            kline, malength = self.get_config()
+
             data = json.loads(message)
             payload = data.get("data", {})
 
@@ -180,7 +200,7 @@ class WebSocketClient:
                 alerts = coins[symbol]
 
                 # get MA15
-                ma = self.price_store.get_ma(symbol,15)
+                ma = self.price_store.get_ma(symbol,malength)
                 print(f"Debug MA {symbol}: {ma}")
 
                 for cfg in alerts:

@@ -123,6 +123,20 @@ class CommandHandler:
                 return f"✅ Added {symbol} {mode} {value}"
             
             return "Usage:\n/add BTCUSDT usd 100\n/add BTCUSDT percent 2\n/add BTCUSDT price 90000"
+        
+        if parts[0] == "/config":
+            if len(parts) == 3:
+                config = parts[1].upper()
+                value = parts[2]
+
+                if config == "KLINE":
+                    self.user_manager.update_config(chat_id, kline=value)
+                
+                if config == "MALENGTH":
+                    self.user_manager.update_config(chat_id, malength=value)
+                return f"✅ Update Config {config} to {value}"
+            
+            return "Usage:\n/config kline 15m\n/config malength 20"
 
         if parts[0] == "/remove":
             if len(parts) == 2:
