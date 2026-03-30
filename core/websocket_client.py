@@ -53,9 +53,8 @@ class WebSocketClient:
         if not symbols:
             return None
 
-        streams = [f"{s}@ticker" for s in symbols]
-        return f"wss://fstream.binance.com:443/stream?streams={'/'.join(streams)}"
-
+        streams = [f"{s}@kline_1m" for s in symbols]   # 🔥 đổi ở đây
+        return f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
     # =========================
     # TELEGRAM
     # =========================
@@ -145,21 +144,30 @@ class WebSocketClient:
     def on_message(self, ws, message):
         try:
             data = json.loads(message)
-            ticker = data.get("data", {})
+            payload = data.get("data", {})
 
-            symbol = ticker.get("s")
-            price = float(ticker.get("c"))
-
-            updated = self.price_store.update(symbol, price)
-
-            if not updated:
+            if payload.get("e") != "kline":
                 return
 
-            prev = updated["prev"]
-            last = updated["last"]
+            symbol = payload.get("s")
+            k = payload.get("k")
 
-            if prev is None:
+            if not k:
                 return
+
+            candle = self.price_store.update_kline(symbol, k)
+
+            # ❗ chỉ xử lý khi nến đóng
+            if not candle["is_closed"]:
+                return
+
+            prev_candle = self.price_store.get_all(symbol)[-2] if len(self.price_store.get_all(symbol)) >= 2 else None
+
+            if not prev_candle:
+                return
+
+            prev = prev_candle["close"]
+            last = candle["close"]
 
             users = self.user_manager.get_users()
 
@@ -171,17 +179,21 @@ class WebSocketClient:
 
                 alerts = coins[symbol]
 
+                # get MA15
+                ma = self.price_store.get_ma(symbol,15)
+                print(f"Debug MA {symbol}: {ma}")
+
                 for cfg in alerts:
                     mode = cfg["mode"]
                     threshold = cfg["threshold"]
 
                     triggered = self.alert_engine.check(
-                        symbol, prev, last, mode, threshold
+                        symbol, ma, last, mode, threshold
                     )
 
                     if triggered:
                         msg = self.build_message(
-                            symbol, prev, last, mode, threshold
+                            symbol, ma, last, mode, threshold
                         )
                         self.send_telegram(chat_id, msg)
 
@@ -195,6 +207,9 @@ class WebSocketClient:
         print("WS CLOSED")
 
     def on_open(self, ws):
+        users = self.user_manager.get_users()
+        for chat_id, user in users.items():
+            self.send_telegram(chat_id, "Hello, we are connected 👋")
         print("WS CONNECTED")
 
     # =========================
