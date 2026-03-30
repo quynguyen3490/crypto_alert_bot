@@ -150,7 +150,7 @@ class WebSocketClient:
         elif mode == "price":
             direction = "🚀 BREAK UP" if last > prev else "🔻 BREAK DOWN"
             return (
-                f"{direction} *{symbol}*\ ({kline})n"
+                f"{direction} *{symbol}*\n ({kline})"
                 f"Price: *{price_str}*\n"
                 f"Target: {self.format_price(value)}\n"
                 f"Time: {now}"
