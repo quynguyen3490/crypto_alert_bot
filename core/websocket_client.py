@@ -224,6 +224,8 @@ class WebSocketClient:
         print("WS ERROR:", error)
 
     def on_close(self, ws, close_status_code, close_msg):
+        for chat_id, user in users.items():
+            self.send_telegram(chat_id, "Sorry, server is down!")
         print("WS CLOSED")
 
     def on_open(self, ws):

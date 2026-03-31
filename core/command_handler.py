@@ -132,7 +132,7 @@ class CommandHandler:
                 if config == "KLINE":
                     self.user_manager.update_config(chat_id, kline=value)
                 
-                if config == "MALENGTH":
+                if config == "MA":
                     self.user_manager.update_config(chat_id, malength=value)
                 return f"✅ Update Config {config} to {value}"
             
