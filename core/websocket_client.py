@@ -219,7 +219,7 @@ class WebSocketClient:
                         idicator = "🔴"
                     elif (last - prev) > 0:
                         idicator = "🟢"
-                    self.send_telegram(chat_id, f"🗒️ Log: *{symbol}*\nLast price: *{self.format_price(last)}*\nPrev price: *{self.format_price(prev)}*\nChange: {idicator}*{self.format_price(last - prev)}*\nMA({malength}): *{self.format_price(self.price_store.get_ma(symbol, malength))}*\nTime: {datetime.now().strftime('%H:%M:%S')}")
+                    self.send_telegram(chat_id, f"🗒️ Log: *{symbol}*\nLast: *{self.format_price(last)}*\nPrev: *{self.format_price(prev)}*\nChange: {idicator} *{self.format_price(abs(last - prev))}*\nMA({malength}): *{self.format_price(self.price_store.get_ma(symbol, malength))}*\nTime: {datetime.now().strftime('%H:%M:%S')}")
 
                 for cfg in alerts:
                     mode = cfg["mode"]
