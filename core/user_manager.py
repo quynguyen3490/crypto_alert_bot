@@ -31,7 +31,7 @@ class UserManager:
         with self.lock:
             if str(chat_id) not in self.users:
                 self.users[str(chat_id)] = {
-                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH},
+                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH, "log": 0},
                     "coins": {}
                 }
                 self.save()
@@ -58,17 +58,20 @@ class UserManager:
                 user["coins"].remove(symbol)
                 self.save()
 
-    def update_config(self, chat_id, kline=None, malength=None):
+    def update_config(self, chat_id, kline=None, malength=None, log=None):
         with self.lock:
             user = self.users.setdefault(str(chat_id), {"config": {}})
 
             config = user.setdefault("config", {})
             
-            if kline:
+            if kline is not None:
                 config["kline"] = str(kline)
             
-            if malength:
+            if malength is not None:
                 config["malength"] = int(malength)
+            
+            if log is not None:
+                config["log"] = int(log)
             
             self.version += 1
             self.save()
