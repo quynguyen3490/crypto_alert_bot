@@ -136,7 +136,7 @@ class CommandHandler:
                     self.user_manager.update_config(chat_id, malength=value)
 
                 if config == "LOG":
-                    self.user_manager.update_config(chat_id, malength=value)
+                    self.user_manager.update_config(chat_id, log=value)
 
                 return f"✅ Update Config {config} to {value}"
             
