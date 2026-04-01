@@ -11,9 +11,6 @@ from core.telegram_bot import TelegramBot
 
 import os
 
-DEFAULT_KLINE = "1m"
-DEFAULT_MALENGTH = 14
-
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 if not TOKEN:
     raise ValueError("Missing TELEGRAM_TOKEN in .env")
@@ -50,21 +47,31 @@ class WebSocketClient:
 
         return list(symbols)
     
-    def get_config(self):
+    def get_config(self, config=None):
         users = self.user_manager.get_users()
 
         if not users:
-            return DEFAULT_KLINE, DEFAULT_MALENGTH
+            return self.user_manager.DEFAULT_KLINE, self.user_manager.DEFAULT_MALENGTH
 
         for uid, u in users.items():
             kline = str(u["config"]["kline"])
             malength = int(u["config"]["malength"])
+            log = u["config"].get("log", 0)
         
-        return kline, malength
+        if config is None:
+            return kline, malength, log
+
+        if config == "kline":
+            return kline
+        if config == "malength":
+            return malength
+        if config == "log":
+            return log
+
 
     def build_url(self):
         symbols = self.get_symbols()
-        kline, malength = self.get_config()
+        kline = self.get_config("kline")
 
         if not symbols:
             return None
@@ -113,7 +120,7 @@ class WebSocketClient:
         return "📈" if last > prev else "📉"
 
     def build_message(self, symbol, prev, last, mode, value):
-        kline, malength = self.get_config()
+        kline, malength, log = self.get_config()
 
         icon = self.trend_icon(prev, last)
         price_str = self.format_price(last)
@@ -161,7 +168,7 @@ class WebSocketClient:
     # =========================
     def on_message(self, ws, message):
         try:
-            kline, malength = self.get_config()
+            kline, malength, log = self.get_config()
 
             data = json.loads(message)
             payload = data.get("data", {})
@@ -176,6 +183,8 @@ class WebSocketClient:
                 return
 
             candle = self.price_store.update_kline(symbol, k)
+
+            
 
             # ❗ chỉ xử lý khi nến đóng
             if not candle["is_closed"]:
@@ -192,6 +201,8 @@ class WebSocketClient:
             users = self.user_manager.get_users()
 
             for chat_id, user in users.items():
+                
+
                 coins = user.get("coins", {})
 
                 if symbol not in coins:
@@ -202,6 +213,13 @@ class WebSocketClient:
                 # get MA15
                 ma = self.price_store.get_ma(symbol,malength)
                 print(f"Debug MA {symbol}: {ma}")
+
+                if log == 1:
+                    if (last - prev) <= 0:
+                        idicator = "🔴"
+                    elif (last - prev) > 0:
+                        idicator = "🟢"
+                    self.send_telegram(chat_id, f"🗒️ Log: *{symbol}*\nLast price: *{self.format_price(last)}*\nPrev price: *{self.format_price(prev)}*\nChange: {idicator}*{self.format_price(last - prev)}*\nMA({malength}): *{self.format_price(self.price_store.get_ma(symbol, malength))}*\nTime: {datetime.now().strftime('%H:%M:%S')}")
 
                 for cfg in alerts:
                     mode = cfg["mode"]

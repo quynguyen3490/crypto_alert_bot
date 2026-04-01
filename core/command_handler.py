@@ -134,6 +134,10 @@ class CommandHandler:
                 
                 if config == "MA":
                     self.user_manager.update_config(chat_id, malength=value)
+
+                if config == "LOG":
+                    self.user_manager.update_config(chat_id, malength=value)
+
                 return f"✅ Update Config {config} to {value}"
             
             return "Usage:\n/config kline 15m\n/config malength 20"
