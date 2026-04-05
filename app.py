@@ -7,13 +7,15 @@ load_dotenv()
 from core.websocket_client import WebSocketClient
 from core.telegram_bot import TelegramBot
 from core.user_manager import UserManager
+from core.price_store import PriceStore
 
 
 def main():
     user_manager = UserManager("config/users.json")
+    price_store = PriceStore()
 
-    ws_client = WebSocketClient(user_manager)
-    telegram_bot = TelegramBot(user_manager)
+    ws_client = WebSocketClient(user_manager, price_store)
+    telegram_bot = TelegramBot(user_manager, price_store)
 
     ws_thread = threading.Thread(target=ws_client.run, daemon=True)
     tg_thread = threading.Thread(target=telegram_bot.run, daemon=True)

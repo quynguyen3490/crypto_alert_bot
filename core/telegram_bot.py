@@ -9,10 +9,11 @@ if not TOKEN:
     raise ValueError("Missing TELEGRAM_TOKEN in .env")
 
 class TelegramBot:
-    def __init__(self, user_manager):
+    def __init__(self, user_manager, price_store):
         self.offset = 0
         self.user_manager = user_manager
-        self.handler = CommandHandler(user_manager)
+        self.price_store = price_store
+        self.handler = CommandHandler(user_manager, price_store)
 
     def get_updates(self):
         url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"

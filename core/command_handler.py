@@ -1,8 +1,8 @@
 class CommandHandler:
-    def __init__(self, user_manager):
+    def __init__(self, user_manager, price_store):
         self.user_manager = user_manager
+        self.price_store = price_store
 
-    
     def format_help(self):
         return (
                 "📘 *Crypto Alert Bot Guide*\n\n"
@@ -53,6 +53,16 @@ class CommandHandler:
         else:
             return f"{price:,.8f}"     # 0.00001234
         
+    def format_candle(self, symbol, candle):
+        return (
+            f"*{symbol}*\n"
+            f"Open: {self.format_price(candle['open'])}\n"
+            f"High: {self.format_price(candle['high'])}\n"
+            f"Low: {self.format_price(candle['low'])}\n"
+            f"Close: {self.format_price(candle['close'])}\n"
+            f"Volume: {self.format_price(candle['volume'])}"
+        )
+
     def format_list(self, chat_id):
         user = self.user_manager.get_users().get(str(chat_id))
 
@@ -88,6 +98,7 @@ class CommandHandler:
             return self.format_help()
 
         if text == "📋 List":
+            
             return self.format_list(chat_id)
 
         if text == "➕ Add Alert":
@@ -123,24 +134,88 @@ class CommandHandler:
                 return f"✅ Added {symbol} {mode} {value}"
             
             return "Usage:\n/add BTCUSDT usd 100\n/add BTCUSDT percent 2\n/add BTCUSDT price 90000"
+
+        if parts[0] == "/get":
+            if len(parts) == 1:
+                if not self.price_store.data:
+                    return "❌ No candle data available yet."
+
+                result_lines = ["📈 Latest candle(s):"]
+                for symbol in sorted(self.price_store.data.keys()):
+                    candle = self.price_store.get_latest(symbol)
+
+                    if candle:
+                        result_lines.append(self.format_candle(symbol, candle))
+
+                return "\n\n".join(result_lines)
+
+            if len(parts) == 2:
+                symbol = parts[1].upper()
+                candle = self.price_store.get_latest(symbol)
+                if not candle:
+                    return f"❌ No candle for {symbol}"
+
+                return self.format_candle(symbol, candle)
+
+            return "Usage:\n/get\n/get BTCUSDT"
         
         if parts[0] == "/config":
-            if len(parts) == 3:
-                config = parts[1].upper()
-                value = parts[2]
+            # Check argument count first for better flow
+            if len(parts) != 3:
+                return "Usage:\n/config kline 15m\n/config malength 20\n/config log 1"
+    
+            config = parts[1].upper()
+            value = parts[2]
 
+            # Map config names to their corresponding attributes
+            config_map = {
+                "KLINE": ("kline",),
+                "MA": ("malength",),
+                "LOG": ("log",)
+            }
+    
+            if config in config_map:
+                # Validate value based on config type
+                valid = False
+        
                 if config == "KLINE":
-                    self.user_manager.update_config(chat_id, kline=value)
-                
-                if config == "MA":
-                    self.user_manager.update_config(chat_id, malength=value)
-
-                if config == "LOG":
-                    self.user_manager.update_config(chat_id, log=value)
-
+                    # kline must be string ending with "m" (e.g., "15m", "30m")
+                    if isinstance(value, str) and value.endswith("m"):
+                        try:
+                            int(value[:-1])  # Check numeric part is valid integer
+                            valid = True
+                        except ValueError:
+                            pass
+        
+                elif config == "MA":
+                    # malength must be an integer
+                    try:
+                        if isinstance(value, (int, float)) or (isinstance(value, str) and value.isdigit()):
+                            int_value = int(value)
+                            if 1 <= int_value <= 200:  # Reasonable range for MA length
+                                valid = True
+                    except ValueError:
+                        pass
+        
+                elif config == "LOG":
+                    # log must be only integer 1 or 0
+                    try:
+                        if value in ("1", "0"):
+                            valid = True
+                    except ValueError:
+                        pass
+        
+                if not valid:
+                    return f"Invalid {config} value '{value}'.\n" \
+                            f"KLINE: string ending with 'm' (e.g., 15m, 30m)\n" \
+                            f"MA: integer between 1-200\n" \
+                            f"LOG: 1 or 0"
+        
+                self.user_manager.update_config(chat_id, **{config_map[config][0]: value})
                 return f"✅ Update Config {config} to {value}"
-            
-            return "Usage:\n/config kline 15m\n/config malength 20"
+    
+            # Optional: handle unknown configs
+            return f"Unknown config type '{config}'. Valid options: KLINE, MA, LOG"
 
         if parts[0] == "/remove":
             if len(parts) == 2:

@@ -7,7 +7,6 @@ from datetime import datetime
 
 from core.price_store import PriceStore
 from core.alert_engine import AlertEngine
-from core.telegram_bot import TelegramBot
 
 import os
 
@@ -17,11 +16,10 @@ if not TOKEN:
 
 
 class WebSocketClient:
-    def __init__(self, user_manager):
+    def __init__(self, user_manager, price_store):
         self.user_manager = user_manager
-        self.price_store = PriceStore()
+        self.price_store = price_store
         self.alert_engine = AlertEngine()
-        self.telegram_bot = TelegramBot(user_manager)
 
         self.ws = None
         self.current_version = -1
@@ -37,10 +35,6 @@ class WebSocketClient:
 
         for uid, u in users.items():
             coins = u.get("coins", {})
-
-            print("DEBUG USER:", uid)
-            print("TYPE:", type(coins))
-            print("VALUE:", coins)
 
             for s in coins.keys():
                 symbols.add(s.lower())
@@ -245,9 +239,6 @@ class WebSocketClient:
         print("WS CLOSED")
 
     def on_open(self, ws):
-        users = self.user_manager.get_users()
-        for chat_id, user in users.items():
-            self.send_telegram(chat_id, "Hello, we are connected 👋")
         print("WS CONNECTED")
 
     # =========================
@@ -261,6 +252,9 @@ class WebSocketClient:
             time.sleep(2)
             return
 
+        if self.ws_thread and self.ws_thread.is_alive():
+            return
+
         print("Connecting:", url)
 
         self.ws = websocket.WebSocketApp(
@@ -271,7 +265,9 @@ class WebSocketClient:
             on_open=self.on_open
         )
 
-        self.ws.run_forever()
+        self.ws_thread = threading.Thread(target=self.ws.run_forever, daemon=True)
+        self.ws_thread.start()
+        time.sleep(1)
 
     # =========================
     # RUN LOOP
@@ -291,9 +287,15 @@ class WebSocketClient:
                         except:
                             pass
 
+                    if self.ws_thread:
+                        self.ws_thread.join(timeout=5)
+
+                    self.ws = None
+                    self.ws_thread = None
                     time.sleep(1)
 
                 self.connect()
+                time.sleep(1)
 
             except Exception as e:
                 print("WS LOOP ERROR:", e)
