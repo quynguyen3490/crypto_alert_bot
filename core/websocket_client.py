@@ -3,7 +3,10 @@ import json
 import time
 import threading
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+import io
+import pandas as pd
+import mplfinance as mpf
 
 from core.price_store import PriceStore
 from core.alert_engine import AlertEngine
@@ -89,6 +92,35 @@ class WebSocketClient:
         except Exception as e:
             print("SEND ERROR:", e)
 
+    def send_photo(self, chat_id, photo_bytes, caption=""):
+        try:
+            url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+            files = {'photo': ('chart.png', photo_bytes, 'image/png')}
+            data = {'chat_id': chat_id, 'caption': caption, 'parse_mode': 'Markdown'}
+            res = requests.post(url, files=files, data=data, timeout=10)
+            print("SEND PHOTO:", res.text)
+        except Exception as e:
+            print("SEND PHOTO ERROR:", e)
+
+    def generate_chart(self, symbol, num_candles=50):
+        candles = self.price_store.get_all(symbol)
+        if len(candles) < num_candles:
+            num_candles = len(candles)
+        recent_candles = candles[-num_candles:]
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(recent_candles)
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df.set_index('timestamp', inplace=True)
+        df = df[['open', 'high', 'low', 'close', 'volume']]
+        df = df.astype(float)
+        
+        # Create plot
+        buf = io.BytesIO()
+        mpf.plot(df, type='candle', volume=True, style='charles', savefig=dict(fname=buf, format='png', bbox_inches='tight'))
+        buf.seek(0)
+        return buf.getvalue()
+
     # =========================
     # FORMAT
     # =========================
@@ -120,7 +152,7 @@ class WebSocketClient:
         price_str = self.format_price(last)
         prev_str = self.format_price(prev)
 
-        now = datetime.now().strftime("%H:%M:%S")
+        now = (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
         if (last - prev) <= 0:
             idicator = "🔴"
@@ -213,7 +245,7 @@ class WebSocketClient:
                         idicator = "🔴"
                     elif (last - prev) > 0:
                         idicator = "🟢"
-                    self.send_telegram(chat_id, f"🗒️ Log: *{symbol}*\nLast: *{self.format_price(last)}*\nPrev: *{self.format_price(prev)}*\nChange: {idicator} *{self.format_price(abs(last - prev))}*\nMA({malength}): *{self.format_price(self.price_store.get_ma(symbol, malength))}*\nTime: {datetime.now().strftime('%H:%M:%S')}")
+                    self.send_telegram(chat_id, f"🗒️ Log: *{symbol}*\nLast: *{self.format_price(last)}*\nPrev: *{self.format_price(prev)}*\nChange: {idicator} *{self.format_price(abs(last - prev))}*\nMA({malength}): *{self.format_price(self.price_store.get_ma(symbol, malength))}*\nTime: {(datetime.utcnow() + timedelta(hours=7)).strftime('%H:%M:%S')}")
 
                 for cfg in alerts:
                     mode = cfg["mode"]
@@ -228,6 +260,8 @@ class WebSocketClient:
                             symbol, ma, last, mode, threshold
                         )
                         self.send_telegram(chat_id, msg)
+                        chart_bytes = self.generate_chart(symbol)
+                        self.send_photo(chat_id, chart_bytes, caption=msg)
 
         except Exception as e:
             print("ON_MESSAGE ERROR:", e)

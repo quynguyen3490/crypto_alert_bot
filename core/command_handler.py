@@ -1,3 +1,8 @@
+import json
+import pandas as pd
+import mplfinance as mpf
+import io
+
 class CommandHandler:
     def __init__(self, user_manager, price_store):
         self.user_manager = user_manager
@@ -30,6 +35,12 @@ class CommandHandler:
                 "📋 *4. Xem config*\n"
                 "/list\n\n"
 
+                "📊 *5. Xem chart*\n"
+                "/chart SYMBOL\n\n"
+
+                "Ví dụ:\n"
+                "/chart BTCUSDT\n\n"
+
                 "⚙️ *Ví dụ thực tế*\n"
                 "Theo dõi BTC:\n"
                 "- /add BTCUSDT percent 0.2\n"
@@ -40,6 +51,25 @@ class CommandHandler:
                 "- Dùng percent nhỏ (0.1–0.5) để test\n"
                 "- USD nhỏ (0.1–10) để thấy alert nhanh\n"
             )
+
+    def generate_chart(self, symbol, num_candles=50):
+        candles = self.price_store.get_all(symbol)
+        if len(candles) < num_candles:
+            num_candles = len(candles)
+        recent_candles = candles[-num_candles:]
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(recent_candles)
+        df['timestamp'] = pd.to_datetime(df['open_time'], unit='ms')
+        df.set_index('timestamp', inplace=True)
+        df = df[['open', 'high', 'low', 'close', 'volume']]
+        df = df.astype(float)
+        
+        # Create plot
+        buf = io.BytesIO()
+        mpf.plot(df, type='candle', volume=True, style='charles', savefig=dict(fname=buf, format='png', bbox_inches='tight'))
+        buf.seek(0)
+        return buf.getvalue()
 
     def format_price(self, price):
         if price >= 1000:
@@ -120,6 +150,15 @@ class CommandHandler:
                 "/remove BTCUSDT usd 50"
             )
 
+        if text == "📊 Chart":
+            return (
+                "📊 Chart\n\n"
+                "Format:\n"
+                "/chart SYMBOL\n\n"
+                "Ví dụ:\n"
+                "/chart BTCUSDT"
+            )
+
         if parts[0] == "/start":
             self.user_manager.add_user(chat_id)
             return "✅ Registered\n\nChọn menu bên dưới 👇"
@@ -158,6 +197,15 @@ class CommandHandler:
                 return self.format_candle(symbol, candle)
 
             return "Usage:\n/get\n/get BTCUSDT"
+        
+        if parts[0] == "/chart":
+            if len(parts) == 2:
+                symbol = parts[1].upper()
+                if not self.price_store.get_all(symbol):
+                    return f"❌ No data for {symbol}"
+                # Return special indicator for chart
+                return f"CHART:{symbol}"
+            return "Usage:\n/chart BTCUSDT"
         
         if parts[0] == "/config":
             # Check argument count first for better flow

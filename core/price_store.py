@@ -72,7 +72,7 @@ class PriceStore:
             return None
 
         # 🔥 lấy tối đa length nến gần nhất (nếu thiếu thì lấy hết)
-        selected = candles[-length:]
+        selected = list(candles)[-length:]
 
         values = [c[source] for c in selected]
 
