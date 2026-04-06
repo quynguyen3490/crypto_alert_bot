@@ -61,6 +61,7 @@ class CommandHandler:
         # Convert to DataFrame
         df = pd.DataFrame(recent_candles)
         df['timestamp'] = pd.to_datetime(df['open_time'], unit='ms')
+        df['timestamp'] = df['timestamp'] + pd.Timedelta(hours=7)
         df.set_index('timestamp', inplace=True)
         df = df[['open', 'high', 'low', 'close', 'volume']]
         df = df.astype(float)
