@@ -260,7 +260,7 @@ class WebSocketClient:
                         msg = self.build_message(
                             symbol, ma, last, mode, threshold
                         )
-                        self.send_telegram(chat_id, msg)
+
                         chart_bytes = self.generate_chart(symbol)
                         self.send_photo(chat_id, chart_bytes, caption=msg)
 
