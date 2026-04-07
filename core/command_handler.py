@@ -265,8 +265,10 @@ class CommandHandler:
                 elif config == "CHART":
                     # chart must be only integer 1 or 0
                     try:
-                        if value > 0 and value <= 100:
-                            valid = True
+                        if isinstance(value, (int, float)) or (isinstance(value, str) and value.isdigit()):
+                            int_value = int(value)
+                            if 1 <= int_value <= 100:  # Reasonable range for chart candles
+                                valid = True
                     except ValueError:
                         pass
         
