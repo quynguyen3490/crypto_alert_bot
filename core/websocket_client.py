@@ -133,10 +133,7 @@ class WebSocketClient:
 
         now = (datetime.utcnow() + timedelta(hours=7)).strftime("%H:%M:%S")
 
-        if (last - prev) <= 0:
-            idicator = "🔴"
-        elif (last - prev) > 0:
-            idicator = "🟢"
+        idicator = "🔴" if (last - prev) <= 0 else "🟢"
 
         real_change = (last - prev)
         real_change_percent = (last - prev) / prev * 100
@@ -172,9 +169,7 @@ class WebSocketClient:
     # WS CALLBACK
     # =========================
     def on_message(self, ws, message):
-        try:
-            
-
+        try:      
             data = json.loads(message)
             payload = data.get("data", {})
 
@@ -188,8 +183,6 @@ class WebSocketClient:
                 return
 
             candle = self.price_store.update_kline(symbol, k)
-
-            
 
             # ❗ chỉ xử lý khi nến đóng
             if not candle["is_closed"]:

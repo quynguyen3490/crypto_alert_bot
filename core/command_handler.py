@@ -176,12 +176,17 @@ class CommandHandler:
             return "Usage:\n/add BTCUSDT usd 100\n/add BTCUSDT percent 2\n/add BTCUSDT price 90000"
 
         if parts[0] == "/get":
+            user = self.user_manager.get_users().get(str(chat_id))
+            coins = user.get("coins") if user else None
+
             if len(parts) == 1:
                 if not self.price_store.data:
                     return "❌ No candle data available yet."
 
                 result_lines = ["📈 Latest candle(s):"]
                 for symbol in sorted(self.price_store.data.keys()):
+                    if symbol not in coins:
+                        continue
                     candle = self.price_store.get_latest(symbol)
 
                     if candle:
@@ -191,6 +196,8 @@ class CommandHandler:
 
             if len(parts) == 2:
                 symbol = parts[1].upper()
+                if symbol not in coins:
+                    return f"❌ You don't have alerts for {symbol}"
                 candle = self.price_store.get_latest(symbol)
                 if not candle:
                     return f"❌ No candle for {symbol}"
