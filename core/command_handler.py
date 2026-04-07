@@ -279,7 +279,7 @@ class CommandHandler:
                             f"LOG: 1 or 0\n" \
                             f"CHART: integer between 1-100"
         
-                self.user_manager.update_config(chat_id, **{config_map[config][0]: value})
+                self.user_manager.update_config(chat_id, config, value)
                 return f"✅ Update Config {config} to {value}"
     
             # Optional: handle unknown configs
