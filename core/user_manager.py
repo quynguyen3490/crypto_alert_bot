@@ -3,6 +3,8 @@ import threading
 
 DEFAULT_KLINE = "1m"
 DEFAULT_MALENGTH = 14
+DEFAULT_CHART = 50
+DEFAULT_LOG = 0
 
 class UserManager:
     def __init__(self, file_path):
@@ -57,21 +59,44 @@ class UserManager:
             if symbol in user["coins"]:
                 user["coins"].remove(symbol)
                 self.save()
+    
+    def get_config(self, chat_id, config=None):
+        u_config = self.users.setdefault(str(chat_id), {"config": {}})
 
-    def update_config(self, chat_id, kline=None, malength=None, log=None):
-        with self.lock:
+        kline = str(u_config.get("kline", DEFAULT_KLINE))
+        malength = int(u_config.get("malength", DEFAULT_MALENGTH))
+        log = u_config.get("log", DEFAULT_LOG)
+        chart = u_config.get("chart", DEFAULT_CHART)
+        
+        if config is None:
+            return u_config
+
+        if config == "kline":
+            return kline
+        if config == "malength":
+            return malength
+        if config == "log":
+            return log
+        if config == "chart":
+            return chart
+
+    def update_config(self, chat_id, config=None, value=None):
+        with self.lock: 
             user = self.users.setdefault(str(chat_id), {"config": {}})
 
-            config = user.setdefault("config", {})
+            u_config = user.setdefault("config", {})
             
-            if kline is not None:
-                config["kline"] = str(kline)
+            if config.upper() == "KLINE":
+                u_config["kline"] = str(value)
             
-            if malength is not None:
-                config["malength"] = int(malength)
+            if config.upper() == "MA":
+                u_config["malength"] = int(value)
             
-            if log is not None:
-                config["log"] = int(log)
+            if config.upper() == "LOG":
+                u_config["log"] = int(value)
+
+            if config.upper() == "CHART":
+                u_config["chart"] = int(value)
             
             self.version += 1
             self.save()

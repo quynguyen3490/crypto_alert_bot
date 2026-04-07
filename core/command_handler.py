@@ -220,7 +220,8 @@ class CommandHandler:
             config_map = {
                 "KLINE": ("kline",),
                 "MA": ("malength",),
-                "LOG": ("log",)
+                "LOG": ("log",),
+                "CHART": ("chart",)
             }
     
             if config in config_map:
@@ -253,12 +254,21 @@ class CommandHandler:
                             valid = True
                     except ValueError:
                         pass
+                
+                elif config == "CHART":
+                    # chart must be only integer 1 or 0
+                    try:
+                        if value > 0 and value <= 100:
+                            valid = True
+                    except ValueError:
+                        pass
         
                 if not valid:
                     return f"Invalid {config} value '{value}'.\n" \
                             f"KLINE: string ending with 'm' (e.g., 15m, 30m)\n" \
                             f"MA: integer between 1-200\n" \
-                            f"LOG: 1 or 0"
+                            f"LOG: 1 or 0\n" \
+                            f"CHART: integer between 1-100"
         
                 self.user_manager.update_config(chat_id, **{config_map[config][0]: value})
                 return f"✅ Update Config {config} to {value}"

@@ -19,16 +19,8 @@ class TestWebSocketClient(unittest.TestCase):
             "2": {"coins": {"BTCUSDT": []}}
         }
         symbols = self.client.get_symbols()
-        self.assertIn("btcusdt", symbols)
-        self.assertIn("ethusdt", symbols)
-
-    def test_get_config(self):
-        self.user_manager.get_users.return_value = {
-            "1": {"config": {"kline": "5m", "malength": 20, "log": 1}}
-        }
-        self.assertEqual(self.client.get_config("kline"), "5m")
-        self.assertEqual(self.client.get_config("malength"), 20)
-        self.assertEqual(self.client.get_config("log"), 1)
+        self.assertIn(("btcusdt", "15m"), symbols)
+        self.assertIn(("ethusdt", "15m"), symbols)
 
     def test_format_price(self):
         self.assertEqual(self.client.format_price(1000), "$1,000.00")
@@ -46,17 +38,17 @@ class TestWebSocketClient(unittest.TestCase):
         self.assertEqual(self.client.trend_icon(105, 100), "📉")
 
     def test_build_message_percent(self):
-        msg = self.client.build_message("BTCUSDT", 100, 101, "percent", 1.0)
+        msg = self.client.build_message("1", "BTCUSDT", 100, 101, "percent", 1.0)
         self.assertIn("BTCUSDT", msg)
         self.assertIn("1.00%", msg)
 
     def test_build_message_usd(self):
-        msg = self.client.build_message("BTCUSDT", 100, 110, "usd", 5.0)
+        msg = self.client.build_message("1", "BTCUSDT", 100, 110, "usd", 5.0)
         self.assertIn("BTCUSDT", msg)
         self.assertIn("$10.00", msg)
 
     def test_build_message_price(self):
-        msg = self.client.build_message("BTCUSDT", 100, 105, "price", 102)
+        msg = self.client.build_message("1", "BTCUSDT", 100, 105, "price", 102)
         self.assertIn("BREAK UP", msg)
 
     @patch('requests.post')

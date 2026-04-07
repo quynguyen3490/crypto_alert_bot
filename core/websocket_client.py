@@ -38,42 +38,20 @@ class WebSocketClient:
 
         for uid, u in users.items():
             coins = u.get("coins", {})
+            kline = u.get("config", {}).get("kline", "15m")
 
             for s in coins.keys():
-                symbols.add(s.lower())
+                symbols.add((s.lower(), kline))
 
         return list(symbols)
-    
-    def get_config(self, config=None):
-        users = self.user_manager.get_users()
-
-        if not users:
-            return self.user_manager.DEFAULT_KLINE, self.user_manager.DEFAULT_MALENGTH
-
-        for uid, u in users.items():
-            kline = str(u["config"]["kline"])
-            malength = int(u["config"]["malength"])
-            log = u["config"].get("log", 0)
-        
-        if config is None:
-            return kline, malength, log
-
-        if config == "kline":
-            return kline
-        if config == "malength":
-            return malength
-        if config == "log":
-            return log
-
 
     def build_url(self):
         symbols = self.get_symbols()
-        kline = self.get_config("kline")
 
         if not symbols:
             return None
 
-        streams = [f"{s}@kline_{kline}" for s in symbols]   # 🔥 đổi ở đây
+        streams = [f"{s}@kline_{kline}" for s, kline in symbols]   # 🔥 đổi ở đây
         return f"wss://stream.binance.com:9443/stream?streams={'/'.join(streams)}"
     # =========================
     # TELEGRAM
@@ -146,8 +124,8 @@ class WebSocketClient:
     def trend_icon(self, prev, last):
         return "📈" if last > prev else "📉"
 
-    def build_message(self, symbol, prev, last, mode, value):
-        kline, malength, log = self.get_config()
+    def build_message(self, chat_id, symbol, prev, last, mode, value):
+        kline, malength = self.user_manager.get_config(chat_id, "kline"), self.user_manager.get_config(chat_id, "malength")
 
         icon = self.trend_icon(prev, last)
         price_str = self.format_price(last)
@@ -195,7 +173,7 @@ class WebSocketClient:
     # =========================
     def on_message(self, ws, message):
         try:
-            kline, malength, log = self.get_config()
+            
 
             data = json.loads(message)
             payload = data.get("data", {})
@@ -227,15 +205,16 @@ class WebSocketClient:
 
             users = self.user_manager.get_users()
 
-            for chat_id, user in users.items():
-                
-
+            for chat_id, user in users.items():    
                 coins = user.get("coins", {})
 
                 if symbol not in coins:
                     continue
 
                 alerts = coins[symbol]
+
+                malength = self.user_manager.get_config(chat_id, "malength")
+                log = self.user_manager.get_config(chat_id, "log")
 
                 # get MA15
                 ma = self.price_store.get_ma(symbol,malength)
@@ -258,7 +237,7 @@ class WebSocketClient:
 
                     if triggered:
                         msg = self.build_message(
-                            symbol, ma, last, mode, threshold
+                            chat_id, symbol, ma, last, mode, threshold
                         )
 
                         chart_bytes = self.generate_chart(symbol)

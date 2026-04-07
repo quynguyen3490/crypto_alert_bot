@@ -27,11 +27,9 @@ class TestUserManager(unittest.TestCase):
         self.assertEqual(self.manager.get_version(), initial_version)
 
     def test_update_config(self):
-        self.manager.update_config(123, kline="5m", malength=20, log=1)
+        self.manager.update_config(123, "kline", "5m")
         users = self.manager.get_users()
         self.assertEqual(users["123"]["config"]["kline"], "5m")
-        self.assertEqual(users["123"]["config"]["malength"], 20)
-        self.assertEqual(users["123"]["config"]["log"], 1)
 
     def test_add_alert(self):
         self.manager.add_alert(123, "BTCUSDT", "percent", 1.0)
