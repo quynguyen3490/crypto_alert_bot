@@ -17,31 +17,25 @@ class TelegramBot:
 
     def get_updates(self):
         url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
-        res = requests.get(url, params={"offset": self.offset, "timeout": 10})
-        print("GET UPDATES:", res.text)
-        return res.json()
-    
-    def send_menu(self, chat_id):
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-
-        keyboard = {
-            "keyboard": [
-                ["➕ Add Alert", "🗑 Remove Alert"],
-                ["📋 List", "📘 Help", "📊 Chart"]
-            ],
-            "resize_keyboard": True,
-            "one_time_keyboard": False
-        }
-
-        requests.post(url, json={
-            "chat_id": chat_id,
-            "reply_markup": keyboard
-        })
+        try:
+            res = requests.get(url, params={"offset": self.offset, "timeout": 30, "limit": 50}, timeout=35)
+            res.raise_for_status()
+            print("GET UPDATES:", res.text)
+            return res.json()
+        except requests.exceptions.RequestException as e:
+            print("GET UPDATES ERROR:", e)
+            return {}
+        except ValueError as e:
+            print("GET UPDATES JSON ERROR:", e)
+            return {}
 
     def send(self, chat_id, text):
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        res = requests.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"})
-        print("SEND:", res.text)
+        try:
+            res = requests.post(url, json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"}, timeout=15)
+            print("SEND:", res.text)
+        except requests.exceptions.RequestException as e:
+            print("SEND ERROR:", e)
 
     def send_photo(self, chat_id, photo_bytes, caption=""):
         try:
@@ -71,6 +65,9 @@ class TelegramBot:
                     chat_id = msg["chat"]["id"]
                     text = msg.get("text", "")
 
+                    if not text:
+                        continue
+
                     print("RECEIVED:", text)
 
                     reply = self.handler.handle(chat_id, text)
@@ -84,9 +81,6 @@ class TelegramBot:
                             self.send_photo(chat_id, chart_bytes, caption=f"📊 Chart for {symbol}")
                         else:
                             self.send(chat_id, reply)
-
-                    # 👇 show menu
-                    self.send_menu(chat_id)
 
             except Exception as e:
                 print("ERROR:", e)
