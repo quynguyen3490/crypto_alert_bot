@@ -208,6 +208,7 @@ class WebSocketClient:
 
                 malength = self.user_manager.get_config(chat_id, "malength")
                 log = self.user_manager.get_config(chat_id, "log")
+                chart = self.user_manager.get_config(chat_id, "chart")
 
                 # get MA15
                 ma = self.price_store.get_ma(symbol,malength)
@@ -233,7 +234,7 @@ class WebSocketClient:
                             chat_id, symbol, ma, last, mode, threshold
                         )
 
-                        chart_bytes = self.generate_chart(symbol)
+                        chart_bytes = self.generate_chart(symbol, chart)
                         self.send_photo(chat_id, chart_bytes, caption=msg)
 
         except Exception as e:

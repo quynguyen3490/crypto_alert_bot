@@ -33,7 +33,7 @@ class UserManager:
         with self.lock:
             if str(chat_id) not in self.users:
                 self.users[str(chat_id)] = {
-                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH, "log": 0},
+                    "config": {"kline":DEFAULT_KLINE, "malength":DEFAULT_MALENGTH, "log": DEFAULT_LOG, "chart": DEFAULT_CHART},
                     "coins": {}
                 }
                 self.save()
