@@ -87,16 +87,16 @@ class UserManager:
             u_config = user.setdefault("config", {})
             
             if config.upper() == "KLINE":
-                u_config["kline"] = str(value)
+                u_config.setdefault("kline", str(value))
             
             if config.upper() == "MA":
-                u_config["malength"] = int(value)
+                u_config.setdefault("malength", int(value))
             
             if config.upper() == "LOG":
-                u_config["log"] = int(value)
+                u_config.setdefault("log", int(value))
 
             if config.upper() == "CHART":
-                u_config["chart"] = int(value)
+                u_config.setdefault("chart", int(value))
             
             self.version += 1
             self.save()
