@@ -2,7 +2,7 @@ from collections import deque
 import json
 
 class PriceStore:
-    def __init__(self, max_candles=500):
+    def __init__(self, max_candles=60):
         # mỗi symbol sẽ có danh sách nến
         self.data = {}
         self.max_candles = max_candles
