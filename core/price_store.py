@@ -7,6 +7,30 @@ class PriceStore:
         self.data = {}
         self.max_candles = max_candles
 
+    def _get_symbol_key(self, symbol):
+        """
+        Helper method to find symbol key with partial matching.
+        Tries exact match first, then partial match (case-insensitive).
+        Returns the matched key or None.
+        """
+        symbol_upper = symbol.upper()
+        
+        # Try exact match first
+        if symbol_upper in self.data:
+            return symbol_upper
+        
+        # Try case-insensitive exact match
+        for key in self.data:
+            if key.upper() == symbol_upper:
+                return key
+        
+        # Try partial match (contains)
+        for key in self.data:
+            if symbol_upper in key.upper():
+                return key
+        
+        return None
+
     def update_kline(self, symbol, k):
         """
         k: object "k" từ Binance websocket
@@ -47,19 +71,23 @@ class PriceStore:
         return candle
 
     def get_latest(self, symbol):
-        if symbol not in self.data or not self.data[symbol]:
+        key = self._get_symbol_key(symbol)
+        if not key or not self.data[key]:
             return None
-        return self.data[symbol][-1]
+        return self.data[key][-1]
 
     def get_all(self, symbol):
-        return list(self.data.get(symbol, []))
+        key = self._get_symbol_key(symbol)
+        return list(self.data.get(key, []))
 
     def get_closed(self, symbol):
         """chỉ lấy nến đã đóng"""
-        return [c for c in self.data.get(symbol, []) if c["is_closed"]]
+        key = self._get_symbol_key(symbol)
+        return [c for c in self.data.get(key, []) if c["is_closed"]]
     
     def get_ma(self, symbol, length=14, source="close", only_closed=True):
-        candles = self.data.get(symbol, [])
+        key = self._get_symbol_key(symbol)
+        candles = self.data.get(key, [])
 
         if not candles:
             return None

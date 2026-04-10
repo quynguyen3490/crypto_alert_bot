@@ -132,39 +132,11 @@ class CommandHandler:
             
             return self.format_list(chat_id)
 
-        if text == "➕ Add Alert":
-            return (
-                "➕ Add Alert\n\n"
-                "Format:\n"
-                "/add SYMBOL MODE VALUE\n\n"
-                "Ví dụ:\n"
-                "/add BTCUSDT percent 0.3"
-            )
-
-        if text == "🗑 Remove Alert":
-            return (
-                "🗑 Remove Alert\n\n"
-                "Format:\n"
-                "/remove SYMBOL\n"
-                "/remove SYMBOL MODE VALUE\n\n"
-                "Ví dụ:\n"
-                "/remove BTCUSDT usd 50"
-            )
-
-        if text == "📊 Chart":
-            return (
-                "📊 Chart\n\n"
-                "Format:\n"
-                "/chart SYMBOL\n\n"
-                "Ví dụ:\n"
-                "/chart BTCUSDT"
-            )
-
         if parts[0] == "/start":
             self.user_manager.add_user(chat_id)
             return "✅ Registered\n\nChọn menu bên dưới 👇"
 
-        if parts[0] == "/add":
+        if parts[0] == "/a":
             if len(parts) == 4:
                 symbol = parts[1].upper()
                 mode = parts[2]
@@ -173,9 +145,9 @@ class CommandHandler:
                 self.user_manager.add_alert(chat_id, symbol, mode, value)
                 return f"✅ Added {symbol} {mode} {value}"
             
-            return "Usage:\n/add BTCUSDT usd 100\n/add BTCUSDT percent 2\n/add BTCUSDT price 90000"
+            return "Usage:\n/a BTCUSDT usd 100\n/a BTCUSDT percent 2\n/a BTCUSDT price 90000"
 
-        if parts[0] == "/get":
+        if parts[0] == "/g":
             user = self.user_manager.get_users().get(str(chat_id))
             coins = user.get("coins") if user else None
 
@@ -204,21 +176,21 @@ class CommandHandler:
 
                 return self.format_candle(symbol, candle)
 
-            return "Usage:\n/get\n/get BTCUSDT"
+            return "Usage:\n/g\n/g BTCUSDT"
         
-        if parts[0] == "/chart":
+        if parts[0] == "/c":
             if len(parts) == 2:
                 symbol = parts[1].upper()
                 if not self.price_store.get_all(symbol):
                     return f"❌ No data for {symbol}"
                 # Return special indicator for chart
                 return f"CHART:{symbol}"
-            return "Usage:\n/chart BTCUSDT"
+            return "Usage:\n/c BTCUSDT\n/c ETHUSDT"
         
-        if parts[0] == "/config":
+        if parts[0] == "/cfg":
             # Check argument count first for better flow
             if len(parts) != 3:
-                return "Usage:\n/config kline 15m\n/config malength 20\n/config log 1"
+                return "Usage:\n/cfg kline 15m\n/cfg malength 20\n/cfg log 1"
     
             config = parts[1].upper()
             value = parts[2]
@@ -285,7 +257,7 @@ class CommandHandler:
             # Optional: handle unknown configs
             return f"Unknown config type '{config}'. Valid options: KLINE, MA, LOG"
 
-        if parts[0] == "/remove":
+        if parts[0] == "/rm":
             if len(parts) == 2:
                 symbol = parts[1].upper()
 
@@ -302,13 +274,13 @@ class CommandHandler:
 
                 return f"🗑 Removed {symbol} {mode} {value}" if ok else "❌ Not found"
 
-            return "Usage:\n/remove BTCUSDT\n/remove BTCUSDT usd 1"
+            return "Usage:\n/rm BTCUSDT\n/rm BTCUSDT usd 1"
 
 
-        if parts[0] == "/list":
+        if parts[0] == "/l":
             return self.format_list(chat_id)
         
-        if parts[0] == "/help":
+        if parts[0] == "/h":
             return self.format_help()
 
-        return "❓ Unknown command\n\nGõ /help để xem hướng dẫn"
+        return "❓ Unknown command\n\nGõ /h để xem hướng dẫn"
