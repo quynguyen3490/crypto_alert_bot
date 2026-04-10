@@ -167,6 +167,7 @@ class CommandHandler:
                 return "\n\n".join(result_lines)
 
             if len(parts) == 2:
+                symbol = parts[1].upper()
                 candle = self.price_store.get_latest(symbol)
                 if not candle:
                     return f"❌ No candle for {symbol}"
