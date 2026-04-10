@@ -178,6 +178,7 @@ class CommandHandler:
         
         if parts[0] == "/c":
             if len(parts) == 2:
+                symbol = parts[1].upper()
                 if not self.price_store.get_all(symbol):
                     return f"❌ No data for {symbol}"
                 # Return special indicator for chart
